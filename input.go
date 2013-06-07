@@ -6,51 +6,63 @@ import (
 
 // Basic string Input for parsing over a string input.
 type StringInput struct {
-	state  State
-	input  []rune
-	offset int
-	txn    []int
+	state State
+	input []rune
+	txn   []Position
+	pos Position
 }
 
-func NewStringInput(s string) *StringInput {
+func NewStringInput(s, filename string) *StringInput {
 	return &StringInput{
 		input: []rune(s),
-		txn:   make([]int, 0, 8),
+		txn:   make([]Position, 0, 8),
+		pos: Position{
+			Name:   filename,
+			Line:   1,
+			Column: 1,
+			Offset: 0,
+		},
 	}
 }
 
 func (s *StringInput) Begin() {
-	s.txn = append(s.txn, s.offset)
+	s.txn = append(s.txn, s.pos)
 }
 
 func (s *StringInput) End(rollback bool) {
-	i := s.txn[len(s.txn)-1]
+	p := s.txn[len(s.txn)-1]
 	s.txn = s.txn[:len(s.txn)-1]
 	if rollback {
-		s.offset = i
+		s.pos = p
 	}
 }
 
 func (s *StringInput) Get(i int) (string, error) {
-	if len(s.input) < s.offset+i {
+	if len(s.input) < s.pos.Offset+i {
 		return "", io.EOF
 	}
 
-	return string(s.input[s.offset : s.offset+i]), nil
+	return string(s.input[s.pos.Offset : s.pos.Offset+i]), nil
 }
 
 func (s *StringInput) Next() (rune, error) {
-	if len(s.input) < s.offset+1 {
+	if len(s.input) < s.pos.Offset+1 {
 		return 0, io.EOF
 	}
 
-	return s.input[s.offset], nil
+	return s.input[s.pos.Offset], nil
 }
 
 func (s *StringInput) Pop(i int) {
-	s.offset += i
+	for j := 0; j < i; j++ {
+		if s.input[s.pos.Offset + j] == '\n' {
+			s.pos.Line++
+			s.pos.Column = 1
+		} else {
+			s.pos.Column++
+		}
+	}
+	s.pos.Offset += i
 }
 
-func (s *StringInput) Position() Position {
-	return Position{Offset: s.offset}
-}
+func (s *StringInput) Position() Position { return s.pos }

@@ -8,7 +8,7 @@ import (
 
 func testSimple(t *testing.T, name string, spec Spec, p Parser, in string, eok bool, exp interface{}) {
 	st := &State{
-		Input: NewStringInput(in),
+		Input: NewStringInput(in, "test"),
 		Spec:  spec,
 	}
 	out, ok, err := p(st)
@@ -75,7 +75,7 @@ func TestComments(t *testing.T) {
 	in := NewStringInput(`// this is a test
 	    // only a test
 	    /* this is
-	       a multiline comment */`)
+	       a multiline comment */`, "test")
 	st := &State{Spec: spec, Input: in}
 	p := OneLineComment()
 	out, d, err := p(st)
@@ -96,7 +96,7 @@ func TestComments(t *testing.T) {
 func TestStringInput(t *testing.T) {
 	testString := "tes†ing mitä"
 
-	in := NewStringInput(testString)
+	in := NewStringInput(testString, "test")
 	outString := ""
 	for {
 		r, err := in.Next()
@@ -113,7 +113,7 @@ func TestStringInput(t *testing.T) {
 		t.Fatalf("Next/Pop produced unmatched output of %#v instead of %#v", outString, testString)
 	}
 
-	in = NewStringInput(testString)
+	in = NewStringInput(testString, "test")
 	in.Pop(1)
 	outString, err := in.Get(5)
 	if err != nil {
@@ -123,7 +123,7 @@ func TestStringInput(t *testing.T) {
 		t.Fatalf("Get produced unmatched output of %#v instead of %#v", outString, "es†in")
 	}
 
-	in = NewStringInput(testString)
+	in = NewStringInput(testString, "test")
 	outString, err = in.Get(12)
 	if err != nil {
 		t.Fatal("Get(12) returned error %s", err.Error())
